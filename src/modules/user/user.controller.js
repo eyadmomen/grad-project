@@ -1,14 +1,12 @@
 import { userModel } from '../../../connections/models/user.model.js'
 import bcrypt from 'bcrypt'
 import jwt from 'jsonwebtoken'
-
-
 import { asyncHandler } from '../../utils/errorHandeling.js'
 
 //========================= Sign Up ==================
 export const SignUp = asyncHandler(async (req, res, next) => {
   // try {
-  const { username, email, password,cpassword, gender } = req.body
+  const { username, email, password,cPassword, gender } = req.body
   // email check
   const isUserExists = await userModel.findOne({ email })
   if (isUserExists) {
