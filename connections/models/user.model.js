@@ -21,7 +21,8 @@ const userSchema = new Schema(
       enum: ['female', 'male', 'not specified'],
       default: 'not specified',
     },
-    profile_pic: String,
+    profile_pic: {secure_url:String,public_id:String},
+    cover_pic:[{secure_url:String,public_id:String}]
   },
   {
     timestamps: true,

@@ -10,7 +10,11 @@ app.use('/feedback', feedbackRouter)
 app.all('*', (req, res, next) =>
     res.status(404).json({ message: '404 Not Found URL' }),
   )
-
+app.use((err,req,res,next)=>{
+  if(err){
+    return res.status(err['cause'] ||500).json({message:err.message})
+  }
+})
 mongoose.connect(process.env.DB_URL || "").then(()=>{
   console.log("connected to database")
 })
