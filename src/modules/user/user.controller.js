@@ -29,7 +29,7 @@ export const SignUp = asyncHandler(async (req, res, next) => {
 )
 //========================== Sign In ========================
 export const SignIn = asyncHandler(async (req, res, next) => {
-  const { email, password } = req.body
+  const { email, password , username } = req.body
   
   const isUserExists = await userModel.findOne({ email })
   if (!isUserExists) {
@@ -41,7 +41,7 @@ export const SignIn = asyncHandler(async (req, res, next) => {
     return res.status(400).json({ message: 'Invalid login credentials' })
   }
 
-  const userToken = jwt.sign({email, _id:isUserExists._id},'testToken')
+  const userToken = jwt.sign({email, _id:isUserExists._id,username},'testToken')
   res.status(200).json({ message: 'loggedIn success', userToken})
  
 })
@@ -92,12 +92,13 @@ export const getUserProfile = asyncHandler(async (req, res) => {
   return res.status(404).json({ message: 'invalid id' })
  
 })
+/////////////////////////////////////////////////////////////////////////
 export const uploudProfilePic = asyncHandler(async(req,res,next)=>{
   const {_id}=req.authuser
   if(!req.file){ 
     return next(new Error("no file uploaded",{cause:400}))
   }
-  const {secure_url,public_id}  = cloudinary.uploader.upload(req.file.path,{
+  const {secure_url,public_id}  =await cloudinary.uploader.upload(req.file.path,{
     folder:`user/profilePic/${_id}`,
     // public_id:`${_id}`
     use_filename:true,
@@ -107,7 +108,7 @@ export const uploudProfilePic = asyncHandler(async(req,res,next)=>{
   // if(!data){
   //   return next(new Error("no data",{cause:400}))
   // } 
-  const user = await userModel.findByIdAndUpdate(_id,{profile_pic:{secure_url:String,public_id:String}},{new:true})
+  const user = await userModel.findByIdAndUpdate(_id,{profile_pic:{secure_url,public_id}},{new:true})
   if(!user){
     await cloudinary.uploader.destroy(public_id)//only one
     // await cloudinary.api.delete_all_resources([publicids])// delete bulk of publicids
