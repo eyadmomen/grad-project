@@ -8,6 +8,9 @@ app.use(cors())
 app.use('/user', userRouter)
 app.use('/feedback', feedbackRouter)
 app.use('/book', bookRooter)
+app.use('/test', (req, res, next) =>
+  res.status(200).json({ message: 'tes' }),
+)
 app.all('*', (req, res, next) =>
     res.status(404).json({ message: '404 Not Found URL' }),
   )
