@@ -1,4 +1,8 @@
+
 import mongoose, { Schema } from 'mongoose'
+import Joi from 'joi'
+const { boolean } = Joi;
+
 
 const userSchema = new Schema(
   {
@@ -21,8 +25,19 @@ const userSchema = new Schema(
       enum: ['female', 'male', 'not specified'],
       default: 'not specified',
     },
+
     profile_pic: {secure_url:String,public_id:String},
-    cover_pic:[{secure_url:String,public_id:String}]
+    cover_pic:[{secure_url:String,public_id:String}],
+    score: {
+      type: Number,
+      default: 0,
+    },
+    schedule_time: {
+      type: String,
+      enum: ['Sunday 3 pm', 'Tuesday 3 pm', 'Friday 3 pm'],
+      default: null
+    },
+
   },
   {
     timestamps: true,
@@ -30,3 +45,4 @@ const userSchema = new Schema(
 )
 
 export const userModel = mongoose.model('User', userSchema)
+

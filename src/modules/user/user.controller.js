@@ -9,6 +9,8 @@ export const SignUp = asyncHandler(async (req, res, next) => {
   // try {
   const { username, email, password,cPassword, gender } = req.body
   // email check
+  console.log("111");
+  
   const isUserExists = await userModel.findOne({ email })
   if (isUserExists) {
     return res.status(400).json({ message: 'Email is already exist' })
@@ -93,6 +95,7 @@ export const getUserProfile = asyncHandler(async (req, res) => {
  
 })
 /////////////////////////////////////////////////////////////////////////
+
 export const uploudProfilePic = asyncHandler(async(req,res,next)=>{
   const {_id}=req.authuser
   if(!req.file){ 
