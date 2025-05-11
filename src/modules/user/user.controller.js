@@ -43,44 +43,53 @@ export const SignIn = asyncHandler(async (req, res, next) => {
     return res.status(400).json({ message: 'Invalid login credentials' })
   }
 
-  const userToken = jwt.sign({email, _id:isUserExists._id,username},'testToken')
+  const userToken = jwt.sign({email, _id:isUserExists._id,username:isUserExists.username,score:isUserExists.score},'testToken')
   res.status(200).json({ message: 'loggedIn success', userToken})
  
 })
 
 //========================== Update profile =================
+
 export const updateProfile = asyncHandler(async (req, res, next) => {
+  const { _id } = req.authuser;
+  const { email, username } = req.body;
 
-  const {_id}=req.authuser
-  const { email , username } = req.body
-  const { loggedInId } = req.query
+  const userExist = await userModel.findOne({ email });
 
-
-
-
-  const userExist = await userModel.findOne({ email })
-
-  // console.log({
-  //   userId: userExist._id.toString(),
-  //   loggedInId,
-//   // })
-
-//   console.log(_id)
-// console.log(  userExist._id.toString());
-  if(!userExist){
-    return res.status(400).json({ message: 'email is not exist' })
+  if (!userExist) {
+    return res.status(400).json({ message: 'Email does not exist' });
   }
-  
+
   if (userExist._id.toString() !== _id.toString()) {
-    return res.status(401).json({ message: 'Unauthorized to take this action' })
+    return res.status(401).json({ message: 'Unauthorized to take this action' });
   }
-  const user = await userModel.updateOne({ email }, { username })
-  if (user.modifiedCount) {
-    return res.status(200).json({ message: ' updated Done' , user})
+
+  const updateResult = await userModel.updateOne({ email }, { username });
+
+  if (updateResult.modifiedCount) {
+    // Re-fetch the updated user
+    const updatedUser = await userModel.findById(_id);
+
+    // Generate new token (adjust payload as needed)
+    const token = jwt.sign(
+      {
+        _id: updatedUser._id,
+        email: updatedUser.email,
+        username: updatedUser.username
+      },
+      "testToken", // use your secret from environment variables in production
+      { expiresIn: "7d" }
+    );
+
+    return res.status(200).json({
+      message: 'Update done',
+      token,
+      user: updatedUser,
+    });
   }
-  res.status(400).json({ message: 'Update fail' })
- 
-})
+
+  res.status(400).json({ message: 'Update failed' });
+});
 
 //========================== get user =======================
 
@@ -88,6 +97,7 @@ export const getUserProfile = asyncHandler(async (req, res) => {
  
   const { _id } = req.authuser
   const user = await userModel.findById(_id)
+  
   if (user) {
     return res.status(200).json({ message: 'Done', user })
   }

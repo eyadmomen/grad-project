@@ -30,7 +30,7 @@ const userSchema = new Schema(
     cover_pic:[{secure_url:String,public_id:String}],
     score: {
       type: Number,
-      default: 0,
+      default: undefined,
     },
     schedule_time: {
       type: String,
