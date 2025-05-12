@@ -7,12 +7,18 @@ const enrolledCoursesSchema = new Schema(
       ref: 'User',
       required: true,
     },
-    courseid: [
-      {
+    courses: [{
+      courseId: {
         type: Schema.Types.ObjectId,
-        ref: 'courses',
+        ref: 'Courses',
+        required: true
       },
-    ],
+      selectedSchedule: {
+        type: Schema.Types.ObjectId,
+        ref: 'Schedule',
+        required: true
+      }
+    }]
   },
   { timestamps: true }
 );

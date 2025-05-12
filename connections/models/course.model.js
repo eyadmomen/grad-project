@@ -13,6 +13,10 @@ const courseSchema = new mongoose.Schema({
   price: {
     type: Number
   },
+  imageurl: {
+    secure_url: String,
+    public_id: String
+  },
   schedules: [
     {
       type: Schema.Types.ObjectId,

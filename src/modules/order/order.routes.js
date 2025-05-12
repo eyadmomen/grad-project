@@ -7,6 +7,7 @@ import { isAuth } from '../../middelwares/auth.js'
 
 router.post('/', isAuth(),order.createOrderFromCart)
 router.post('/putInEnrolledCources', isAuth(),order.putInDataBase)
+router.get('/enrolled-courses', isAuth(), order.getEnrolledCourses)
 
 
 export default router

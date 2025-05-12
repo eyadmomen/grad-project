@@ -15,7 +15,7 @@ const cartSchema = new mongoose.Schema(
           required: true,
         },
         scheduleId: {
-         type: String, // أو ممكن ObjectId لو كل schedule ليه id خاص
+          type: String,
           required: true,
         },
       },

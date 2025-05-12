@@ -143,3 +143,24 @@ export const deleteScheduleFromCart = async (req, res, next) => {
     return next(err);
   }
 };
+// ======================= Clear Cart ==================
+export const clearCart = async (req, res, next) => {
+  try {
+    const { _id } = req.authuser;
+
+    const cart = await cartModel.findOne({ userId: _id });
+
+    if (!cart) {
+      return res.status(404).json({ message: "Cart not found" });
+    }
+
+    cart.courses = [];
+    cart.total = 0;
+    await cart.save();
+
+    return res.status(200).json({ message: "Cart cleared successfully", cart });
+  } catch (err) {
+    console.error(err);
+    next(err);
+  }
+};

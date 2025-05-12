@@ -1,5 +1,3 @@
-
-
 import { cartModel } from "../../../connections/models/cart.model.js";
 import { orderModel } from "../../../connections/models/order.model.js";
 import { courseModel } from "../../../connections/models/course.model.js";
@@ -28,79 +26,77 @@ export const createOrderFromCart = async (req, res, next) => {
       return res.status(400).json({ message: "Cart ID is required" });
     }
 
-    const cart = await cartModel.findById(cartId);
+    const cart = await cartModel.findById(cartId).populate('courses.courseId');
     if (!cart || cart.courses.length === 0) {
       return res.status(400).json({ message: "Cart is empty or not found" });
     }
 
-    if (!cart.schedule) {
-      return res.status(400).json({ message: "No schedule found in cart" });
-    }
+    // Prepare courses data
+    const orderCourses = cart.courses.map(item => ({
+      productId: item.courseId._id,
+      title: item.courseId.title,
+      price: item.courseId.price,
+      quantity: 1,
+      scheduleId: item.scheduleId
+    }));
 
-    // تجهيز بيانات الكورسات
-    const orderCourses = await Promise.all(
-      cart.courses.map(async (item) => {
-        const course = await courseModel.findById(item.courseId);
-        if (!course) return null;
+    // Calculate total
+    const total = orderCourses.reduce((sum, course) => sum + course.price, 0);
 
-        return {
-          productId: course._id,
-          title: course.title,
-          price: course.price,
-        };
-      })
-    );
-
-    const filteredCourses = orderCourses.filter(Boolean);
-    if (filteredCourses.length === 0) {
-      return res.status(400).json({ message: "No valid courses found in cart" });
-    }
-
-    // إنشاء الطلب
+    // Create order
     const newOrder = await orderModel.create({
       userId: cart.userId,
-      courses: filteredCourses,
-      schedule: cart.schedule,
-      total: cart.total,
-      paymentMethod: paymentMethod || "cash",
+      courses: orderCourses,
+      total: total,
+      paymentMethod: paymentMethod || "cash"
     });
-    //********************payment */
-    const {email} = await userModel.findById(_id)
-    let orederSession
-    if(newOrder.paymentMethod=='card'){
-      const token = generateToken({payload:{orderId:newOrder._id},signature:process.env.ORDER_TOKEN,expiresIn:'1h'})
-      orederSession = await paymentFunction({
+
+    // Handle payment if card payment
+    let orderSession;
+    if (paymentMethod === 'card') {
+      const user = await userModel.findById(_id);
+      const token = generateToken({
+        payload: { orderId: newOrder._id },
+        signature: process.env.ORDER_TOKEN,
+        expiresIn: '1h'
+      });
+
+      orderSession = await paymentFunction({
         payment_method_types: ['card'],
         mode: 'payment',
-        customer_email: email,
+        customer_email: user.email,
         metadata: { orderId: newOrder._id.toString() },
         success_url: `${req.protocol}://${req.headers.host}/order/successOrder?token=${token}`,
         cancel_url: `${req.protocol}://${req.headers.host}/order/cancelOrder?token=${token}`,
-        line_items: newOrder.courses.map((ele) => ({
+        line_items: orderCourses.map(course => ({
           price_data: {
             currency: 'EGP',
             product_data: {
-              name: ele.title,
+              name: course.title,
             },
-            unit_amount: ele.price * 100,
+            unit_amount: course.price * 100,
           },
-          quantity: ele.quantity || 1
+          quantity: course.quantity
         }))
       });
     }
-    // جلب بيانات الجدول بعد إنشاء الأوردر
-    const scheduleData = await scheduleModel.findById(cart.schedule);
 
-    // حذف السلة
-    // await cartModel.findByIdAndDelete(cartId);
+    // Create enrolled courses record
+    await enrolledCoursesModel.create({
+      userid: userId,
+      courses: orderCourses.map(course => ({
+        courseId: course.productId,
+        selectedSchedule: course.scheduleId
+      }))
+    });
+
+    // Delete cart after successful order
+    await cartModel.findByIdAndDelete(cartId);
 
     return res.status(201).json({
-      message: "Order created",
-      order: {
-        ...newOrder.toObject(),
-        scheduleName: scheduleData?.schedule || "Unknown",
-      },
-     checkOutUrl: orederSession.url
+      message: "Order created successfully",
+      order: newOrder,
+      checkoutUrl: orderSession?.url
     });
 
   } catch (error) {
@@ -145,6 +141,55 @@ export const putInDataBase = asyncHandler(async(req,res,next)=>{
       schedule: cart.schedule,
     });
 })
+
+// Get user's enrolled courses
+export const getEnrolledCourses = asyncHandler(async (req, res, next) => {
+  const { _id } = req.authuser;
+
+  // Find user's enrolled courses and populate course details
+  const enrolledCourses = await enrolledCoursesModel.findOne({ userid: _id })
+    .populate({
+      path: 'courses.courseId',
+      select: 'title description price imageurl schedules',
+      model: 'Courses',
+      populate: {
+        path: 'schedules',
+        select: 'schedule',
+        model: 'Schedule'
+      }
+    })
+    .populate({
+      path: 'courses.selectedSchedule',
+      select: 'schedule',
+      model: 'Schedule'
+    });
+
+  if (!enrolledCourses) {
+    return res.status(404).json({ message: "No enrolled courses found" });
+  }
+
+  // Format the response
+  const formattedCourses = enrolledCourses.courses.map(course => ({
+    courseId: course.courseId._id,
+    title: course.courseId.title,
+    description: course.courseId.description,
+    price: course.courseId.price,
+    image: course.courseId.imageurl,
+    selectedSchedule: {
+      scheduleId: course.selectedSchedule._id,
+      scheduleTime: course.selectedSchedule.schedule
+    },
+    availableSchedules: course.courseId.schedules.map(schedule => ({
+      scheduleId: schedule._id,
+      scheduleTime: schedule.schedule
+    }))
+  }));
+
+  return res.status(200).json({
+    message: "Enrolled courses retrieved successfully",
+    courses: formattedCourses
+  });
+});
 
 
 
