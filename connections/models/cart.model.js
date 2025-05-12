@@ -11,7 +11,7 @@ const cartSchema = new mongoose.Schema(
       {
         courseId: {
           type: Schema.Types.ObjectId,
-          ref: "courses",
+          ref: "Courses",
           required: true,
         },
       },

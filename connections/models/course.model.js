@@ -1,6 +1,5 @@
-import mongoose, { Schema } from 'mongoose'
-
-
+// course.model.js
+import mongoose, { Schema } from 'mongoose';
 
 const courseSchema = new mongoose.Schema({
   title: {
@@ -11,8 +10,15 @@ const courseSchema = new mongoose.Schema({
     type: String,
     required: true
   },
-  price:{
-    type:Number
-  }
+  price: {
+    type: Number
+  },
+  schedules: [
+    {
+      type: Schema.Types.ObjectId,
+      ref: 'Schedule' // لازم يكون نفس الاسم المستخدم في model
+    }
+  ]
 });
-export const courseModel = mongoose.model('courses', courseSchema)
+
+export const courseModel = mongoose.model('Courses', courseSchema); // ✅ تأكد الاسم هو "Course"

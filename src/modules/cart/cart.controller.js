@@ -114,6 +114,7 @@ export const deleteCourseFromCart = async (req, res, next) => {
   if (!userCart) {
     return next(new Error("no course id in cart "));
   }
+  userCart.total -= courseCheck.price;
   userCart.courses.forEach((ele) => {
     if (ele.courseId == courseId) {
       userCart.courses.splice(userCart.courses.indexOf(ele), 1);
