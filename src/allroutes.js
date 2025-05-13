@@ -6,6 +6,6 @@ import course from './modules/couse/course.routes.js'
 import schedule from './modules/schedule/schedule.routes.js'
 import cart from './modules/cart/cart.routes.js'
 import order from './modules/order/order.routes.js'
-import leason from './modules/leason/leason.router.js'
+import leason from './modules/leason/leason.routes.js'
 
 export {userRouter,feedbackRouter,bookRooter,plasementTest,course,schedule,cart,order,leason}

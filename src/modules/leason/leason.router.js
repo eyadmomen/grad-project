@@ -8,7 +8,7 @@ import { allowedExtensions } from '../../utils/allowedExtentions.js'
 
 
 router.post('/', isAuth(),ls.addleason)
-router.post('/uploadvideo',isAuth(),multercloudFunction(allowedExtensions.Videos).single('video'),ls.addvideotoleason)
+router.post('/uploadvideo/:_id',isAuth(),multercloudFunction(allowedExtensions.Videos).single('video'),ls.addvideotoleason)
 
 router.post('/uploadAssig',isAuth(),multercloudFunction(allowedExtensions.Files).single('pdf'),ls.uploadAssig)
 router.get('/',isAuth(),ls.getleason)

@@ -22,6 +22,12 @@ const courseSchema = new mongoose.Schema({
       type: Schema.Types.ObjectId,
       ref: 'Schedule' // لازم يكون نفس الاسم المستخدم في model
     }
+  ],
+  lessons: [
+    {
+      type: Schema.Types.ObjectId,
+      ref: 'Leason'
+    }
   ]
 });
 
