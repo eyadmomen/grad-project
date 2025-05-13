@@ -166,8 +166,6 @@ export const getEnrolledCourses = asyncHandler(async (req, res, next) => {
 
   if (!enrolledCourses) {
     return res.status(404).json({ message: "No enrolled courses found" });
-
-    console.log(enrolledCourses);
   }
   
 
