@@ -8,8 +8,8 @@ import { allowedExtensions } from '../../utils/allowedExtentions.js'
 import { checkAdmin } from '../../middelwares/adminAuth.js'
 
 
-router.post('/', isAuth(),checkAdmin(),ls.addleason)//Admin only
-router.post('/uploadvideo/:_id',isAuth(),checkAdmin(),multercloudFunction(allowedExtensions.Videos).single('video'),ls.addvideotoleason)//Admin only
+router.post('/', isAuth(),checkAdmin,ls.addleason)//Admin only
+router.post('/uploadvideo/:_id',isAuth(),checkAdmin,multercloudFunction(allowedExtensions.Videos).single('video'),ls.addvideotoleason)//Admin only
 
 router.post('/uploadAssig',isAuth(),multercloudFunction(allowedExtensions.Files).single('pdf'),ls.uploadAssig)//User
 router.get('/',isAuth(),ls.getLesson)
