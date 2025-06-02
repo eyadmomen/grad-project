@@ -18,6 +18,7 @@ export const multerFunction  = (allowedExtensionsArr,customPath)=>{
             cb(null,destpath)
         },
         filename:function(req,file,cb){
+            
             const unifilename = nanoid() + file.originalname
             cb(null,unifilename)
         }
