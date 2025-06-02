@@ -29,6 +29,9 @@ const leasonSchema = new mongoose.Schema(
           secure_url: String,
           public_id: String
         },
+        mark:{
+        type:String
+        },
         submittedAt: {
           type: Date,
           default: Date.now

@@ -7,7 +7,7 @@ import cloudinary from '../../utils/cloudinaryConfigration.js'
 //========================= Sign Up ==================
 export const SignUp = asyncHandler(async (req, res, next) => {
   // try {
-  const { username, email, password,cPassword, gender } = req.body
+  const { username, email, password,cPassword, gender , role } = req.body
   // email check
   console.log("111");
   
@@ -22,6 +22,7 @@ export const SignUp = asyncHandler(async (req, res, next) => {
     email,
     password: hashedPassword,
     gender,
+    role
   })
   await userInstance.save()
   res.status(201).json({ message: 'Done', userInstance })
@@ -31,7 +32,7 @@ export const SignUp = asyncHandler(async (req, res, next) => {
 )
 //========================== Sign In ========================
 export const SignIn = asyncHandler(async (req, res, next) => {
-  const { email, password , username } = req.body
+  const { email, password  } = req.body
   
   const isUserExists = await userModel.findOne({ email })
   if (!isUserExists) {
@@ -43,7 +44,9 @@ export const SignIn = asyncHandler(async (req, res, next) => {
     return res.status(400).json({ message: 'Invalid login credentials' })
   }
 
-  const userToken = jwt.sign({email, _id:isUserExists._id,username:isUserExists.username,score:isUserExists.score},'testToken')
+  const userToken = jwt.sign({email, _id:isUserExists._id,username:isUserExists.username,score:isUserExists.score,role:isUserExists.role},'testToken')
+  isUserExists.token=userToken
+  await isUserExists.save()
   res.status(200).json({ message: 'loggedIn success', userToken})
  
 })
@@ -164,3 +167,14 @@ export const coverPictures = async (req, res, next) => {
   )
   res.status(200).json({ message: 'Done', userNew })
 }
+
+
+////try admin
+export const tryadmin = asyncHandler(async(req,res,next)=>{
+  const { _id } = req.authUser
+  const user = await userModel.findById(_id)
+  if(user.role =="Admin"){
+    return res.status(200).json({ message: 'Admin', user })
+  }
+  return  res.status(200).json({ message: 'User', user })
+})

@@ -23,10 +23,7 @@ export const addCourse = asyncHandler (async(req,res,next)=>{
     res.status(201).json({message:"added done", course});
   });
 
-
 // =============== show courses =================//
-
-
 
 export const getCourses = asyncHandler(async (req, res) => {
     const courses = await courseModel.find({});

@@ -1,7 +1,7 @@
 
 import mongoose, { Schema } from 'mongoose'
-import Joi from 'joi'
-const { boolean } = Joi;
+
+// const { boolean } = Joi;
 
 
 const userSchema = new Schema(
@@ -37,7 +37,21 @@ const userSchema = new Schema(
       enum: ['Sunday 3 pm', 'Tuesday 3 pm', 'Friday 3 pm'],
       default: null
     },
-
+    token:{
+      type: String,
+    },
+    role:{
+      type: String,
+      default:'User',
+      enum:['User','Admin']
+      
+    },
+    phoneNumber:{
+      type:String
+    },
+    assig:[{
+      
+    }]
   },
   {
     timestamps: true,

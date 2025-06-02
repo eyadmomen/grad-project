@@ -175,4 +175,7 @@ export const uploadAssig = asyncHandler(async (req, res, next) => {
     return next(error);
   }
 });
+export const AddMarkByAdmin = asyncHandler(async(req,res,next)=>{
+  
+})
 

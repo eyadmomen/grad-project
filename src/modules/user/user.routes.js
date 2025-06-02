@@ -23,4 +23,5 @@ router.post(
     ]),
     ur.coverPictures   
   )
+router.post('/Admin',isAuth(),ur.tryadmin)
 export default router
