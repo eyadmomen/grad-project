@@ -180,7 +180,7 @@ export const tryadmin = asyncHandler(async(req,res,next)=>{
 
 ////////*************get all users */
 export const getallusers = asyncHandler(async(req,res,next)=>{
-   const { _id } = req.authUser
+   const { _id } = req.authuser
   const user = await userModel.findById(_id)
   const allUsers = await userModel.find({})
   if(user.role =="Admin"){
