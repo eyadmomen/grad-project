@@ -16,7 +16,7 @@ export const addCourse = asyncHandler (async(req,res,next)=>{
       price
     });
   
-    res.status(201).json({message:"added done", course});
+    res.status(201).json({message:"added done", course,courseId: course._id});
   });
 
 export const uploudProfilePic = asyncHandler(async(req,res,next)=>{
@@ -41,6 +41,7 @@ export const uploudProfilePic = asyncHandler(async(req,res,next)=>{
     // await cloudinary.api.delete_all_resources([publicids])// delete bulk of publicids
   }
   res.status(200).json({message:'done',user})
+  
 })
 // =============== show courses =================//
 
