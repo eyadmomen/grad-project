@@ -5,14 +5,19 @@ import { isAuth } from '../../middelwares/auth.js'
 import { checkAdmin } from '../../middelwares/adminAuth.js'
 import { multercloudFunction } from '../../services/multerCloudenary.js'
 import { allowedExtensions } from '../../utils/allowedExtentions.js'
+import cloudinary from '../../utils/cloudinaryConfigration.js'
 
 
 router.post('/',isAuth(),checkAdmin(),course.addCourse)
 router.get('/',course.getCourses)
-router.post('/courseCover',isAuth(),multercloudFunction(allowedExtensions.Image).single('profile'),course.uploudProfilePic)
+// router.post('/courseCover',isAuth() , multercloudFunction(allowedExtensions.Image).single('courseimage'), course.uploadCoursePic);
 
-
-
+router.post(
+  '/courseCover',
+  isAuth(),
+  multercloudFunction(allowedExtensions.Image).single('courseimage'),
+  course.uploadCoursePic
+);
 
 
 
