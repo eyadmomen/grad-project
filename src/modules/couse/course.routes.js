@@ -11,6 +11,7 @@ router.post('/',isAuth(),checkAdmin(),course.addCourse)
 router.get('/',course.getCourses)
 router.post('/courseCover',isAuth(),multercloudFunction(allowedExtensions.Image).single('profile'),course.uploudProfilePic)
 
+router.delete('/:courseId', isAuth(), course.deleteCourse);
 
 
 

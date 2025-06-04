@@ -48,3 +48,23 @@ export const getCourses = asyncHandler(async (req, res) => {
     const courses = await courseModel.find({});
     res.json(courses);
 });
+
+export const deleteCourse = asyncHandler(async(req,res,next)=>{
+  
+    const { courseId } = req.params;
+  
+    const lesson = await courseModel.findById(courseId);
+    if (!lesson) {
+      return res.status(404).json({ message: 'Lesson not found' });
+    }
+  
+    // Remove lesson from course's lessons array
+    await courseModel.findByIdAndUpdate(
+      lesson.courseId,
+      { $pull: { courses: courseId } }
+    );
+  
+    await leasonModel.findByIdAndDelete(courseId);
+  
+    res.status(200).json({ message: 'courses deleted successfully' });
+  });
