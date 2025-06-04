@@ -47,4 +47,4 @@ export const uploudProfilePic = asyncHandler(async(req,res,next)=>{
 export const getCourses = asyncHandler(async (req, res) => {
     const courses = await courseModel.find({});
     res.json(courses);
-  });
+});
