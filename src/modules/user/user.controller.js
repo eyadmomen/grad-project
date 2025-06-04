@@ -3,7 +3,6 @@ import bcrypt from 'bcrypt'
 import jwt from 'jsonwebtoken'
 import { asyncHandler } from '../../utils/errorHandeling.js'
 import cloudinary from '../../utils/cloudinaryConfigration.js'
-
 //========================= Sign Up ==================
 export const SignUp = asyncHandler(async (req, res, next) => {
   // try {
@@ -186,5 +185,22 @@ export const getallusers = asyncHandler(async(req,res,next)=>{
   const allUsers = await userModel.find({})
   if(user.role =="Admin"){
     return res.status(200).json({ message: 'all users retured only by admin', allUsers })
+  }
+})
+/*****************delete user */
+export const deleteUserByAdmin = asyncHandler(async(req,res,next)=>{
+   const { _id } = req.authUser
+   const {userId}=req.body
+
+ const user = await userModel.findById(_id)
+ const userdelete = await userModel.findById(userId)
+ if(!userdelete){
+    return res.json({ message: 'cannot found user' })
+
+ }
+  if(user.role =="Admin"){
+    await userModel.findByIdAndDelete(userId)
+
+    return res.status(200).json({ message: 'deleted done' })
   }
 })

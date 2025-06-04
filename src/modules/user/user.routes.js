@@ -25,4 +25,6 @@ router.post(
   )
 router.post('/Admin',isAuth(),ur.tryadmin)
 router.post('/allUsers',isAuth(),ur.getallusers)
+router.delete('/deleted', isAuth(), ur.deleteUserByAdmin);
+
 export default router
