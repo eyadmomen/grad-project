@@ -147,8 +147,7 @@ export const getEnrolledCourses = asyncHandler(async (req, res, next) => {
   const { _id } = req.authuser;
 
   // Find user's enrolled courses and populate course details
-  const enrolledCourses = await enrolledCoursesModel.findOne({ userid: _id })
-    .populate({
+  const enrolledCourses = await enrolledCoursesModel.find({ userid: _id }).populate({
       path: 'courses.courseId',
       select: 'title description price imageurl schedules',
       model: 'Courses',
@@ -170,21 +169,27 @@ export const getEnrolledCourses = asyncHandler(async (req, res, next) => {
   
 
   // Format the response
-  const formattedCourses = enrolledCourses.courses.map(course => ({
-    courseId: course.courseId._id,
-    title: course.courseId.title,
-    description: course.courseId.description,
-    price: course.courseId.price,
-    image: course.courseId.imageurl,
-    selectedSchedule: {
-      scheduleId: course.selectedSchedule._id,
-      scheduleTime: course.selectedSchedule.schedule
-    },
-    availableSchedules: course.courseId.schedules.map(schedule => ({
-      scheduleId: schedule._id,
-      scheduleTime: schedule.schedule
+  const formattedCourses = enrolledCourses.flatMap(enrolled =>
+    enrolled.courses.map(course => ({
+      courseId: course.courseId._id,
+      title: course.courseId.title,
+      description: course.courseId.description,
+      price: course.courseId.price,
+      image: course.courseId.imageurl,
+      selectedSchedule: course.selectedSchedule
+        ? {
+            scheduleId: course.selectedSchedule._id,
+            scheduleTime: course.selectedSchedule.schedule
+          }
+        : null,
+      availableSchedules: course.courseId.schedules
+        ? course.courseId.schedules.map(schedule => ({
+            scheduleId: schedule._id,
+            scheduleTime: schedule.schedule
+          }))
+        : []
     }))
-  }));
+  );
 
   return res.status(200).json({
     message: "Enrolled courses retrieved successfully",
