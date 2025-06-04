@@ -183,7 +183,7 @@ export const tryadmin = asyncHandler(async(req,res,next)=>{
 export const getallusers = asyncHandler(async(req,res,next)=>{
    const { _id } = req.authUser
   const user = await userModel.findById(_id)
-  const allUsers = await userModel.find()
+  const allUsers = await userModel.find({})
   if(user.role =="Admin"){
     return res.status(200).json({ message: 'all users retured only by admin', allUsers })
   }
