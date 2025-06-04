@@ -35,7 +35,7 @@ export const uploudProfilePic = asyncHandler(async(req,res,next)=>{
   // if(!data){
   //   return next(new Error("no data",{cause:400}))
   // } 
-  const user = await userModel.findByIdAndUpdate(courseId,{profile_pic:{secure_url,public_id}},{new:true})
+  const user = await userModel.findByIdAndUpdate(courseId,{imageurl:{secure_url,public_id}},{new:true})
   if(!user){
     await cloudinary.uploader.destroy(public_id)//only one
     // await cloudinary.api.delete_all_resources([publicids])// delete bulk of publicids
