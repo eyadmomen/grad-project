@@ -24,5 +24,8 @@ router.post(
     ur.coverPictures   
   )
 router.post('/Admin',isAuth(),ur.tryadmin)
-router.post('/allUsers',isAuth(),ur.getallusers)
+
+router.get('/allUsers',isAuth(),ur.getallusers)
+
+
 export default router
