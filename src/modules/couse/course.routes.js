@@ -6,7 +6,7 @@ import { checkAdmin } from '../../middelwares/adminAuth.js'
 
 
 router.post('/',isAuth(),checkAdmin(),course.addCourse)
-router.get('/',isAuth(),checkAdmin(),course.getCourses)
+router.get('/',course.getCourses)
 
 
 
