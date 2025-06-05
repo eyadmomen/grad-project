@@ -3,7 +3,6 @@ import bcrypt from 'bcrypt'
 import jwt from 'jsonwebtoken'
 import { asyncHandler } from '../../utils/errorHandeling.js'
 import cloudinary from '../../utils/cloudinaryConfigration.js'
-
 //========================= Sign Up ==================
 export const SignUp = asyncHandler(async (req, res, next) => {
   // try {

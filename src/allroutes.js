@@ -7,5 +7,7 @@ import schedule from './modules/schedule/schedule.routes.js'
 import cart from './modules/cart/cart.routes.js'
 import order from './modules/order/order.routes.js'
 import leason from './modules/leason/leason.routes.js'
+import finalExam from './modules/finalExam/finalExam.routes.js'
 
-export {userRouter,feedbackRouter,bookRooter,plasementTest,course,schedule,cart,order,leason}
+
+export {userRouter,feedbackRouter,bookRooter,plasementTest,course,schedule,cart,order,leason,finalExam}

@@ -1,7 +1,7 @@
 import mongoose from "mongoose"
 import cors from "cors"
 
-import { bookRooter, feedbackRouter, userRouter, plasementTest,course,schedule,cart,order, leason} from "./allroutes.js"
+import { bookRooter, feedbackRouter, userRouter, plasementTest,course,schedule,cart,order, leason,finalExam} from "./allroutes.js"
 export const initapp = (app, express)=>{
     const port =  process.env.PORT
 app.use(express.json())
@@ -15,6 +15,8 @@ app.use('/schedule',schedule)
 app.use('/cart',cart)
 app.use('/order',order)
 app.use('/leason',leason)
+app.use('/finalExam',finalExam)
+
 
 app.use('/test', (req, res, next) =>
   res.status(200).json({ message: 'tes' }),
@@ -30,6 +32,7 @@ app.use((err,req,res,next)=>{
 mongoose.connect(process.env.DB_URL || "").then(()=>{
   console.log("connected to database")
 })
+
 app.listen(port, () => console.log(`Example app listening on port ${port}!`))
 
 }

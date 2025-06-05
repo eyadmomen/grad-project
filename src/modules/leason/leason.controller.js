@@ -6,7 +6,10 @@ import { courseModel } from '../../../connections/models/course.model.js';
 // Add a new lesson to a course
 export const addleason = asyncHandler(async (req, res, next) => {
   const { title, description, courseId } = req.body;
+   
 
+  console.log(title,description,courseId);
+  
   if (!title || !description || !courseId) {
     return res.status(400).json({ message: "title, description, and courseId are required" });
   }
@@ -158,16 +161,36 @@ export const uploadAssig = asyncHandler(async (req, res, next) => {
       },
       { new: true }
     );
+            // console.log(updatedLesson.assignments.length());
+
+// console.log(updatedLesson.assignments.length);
+
+
+// if(updatedLesson.assignments.length>1){
+//   console.log("trueeee");
+// }else{
+//   res.json("please upload all assigments first")
+// }
 
     if (!updatedLesson) {
       await cloudinary.uploader.destroy(public_id);
       return res.status(404).json({ message: "Lesson not found" });
     }
 
+    // console.log(`Assignment ${index + 1}:`, assignment);
+    
+
     res.status(200).json({ 
       message: 'Assignment uploaded successfully',
       lesson: updatedLesson 
     });
+
+
+    
+
+
+
+
   } catch (error) {
     if (req.file) {
       await cloudinary.uploader.destroy(req.file.public_id);
@@ -175,6 +198,8 @@ export const uploadAssig = asyncHandler(async (req, res, next) => {
     return next(error);
   }
 });
+
+
 export const AddMarkByAdmin = asyncHandler(async(req,res,next)=>{
   
 })
