@@ -1,54 +1,58 @@
-import { userModel } from '../../../connections/models/user.model.js'
-import bcrypt from 'bcrypt'
-import jwt from 'jsonwebtoken'
-import { asyncHandler } from '../../utils/errorHandeling.js'
-import cloudinary from '../../utils/cloudinaryConfigration.js'
+import { userModel } from "../../../connections/models/user.model.js";
+import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
+import { asyncHandler } from "../../utils/errorHandeling.js";
+import cloudinary from "../../utils/cloudinaryConfigration.js";
 //========================= Sign Up ==================
 export const SignUp = asyncHandler(async (req, res, next) => {
   // try {
-  const { username, email, password,cPassword, gender , role } = req.body
+  const { username, email, password, cPassword, gender, role } = req.body;
   // email check
-  console.log("111");
-  
-  const isUserExists = await userModel.findOne({ email })
+
+  const isUserExists = await userModel.findOne({ email });
   if (isUserExists) {
-    return res.status(400).json({ message: 'Email is already exist' })
+    return res.status(400).json({ message: "Email is already exist" });
   }
   // hashing password
-  const hashedPassword = bcrypt.hashSync(password, +process.env.SALT_ROUNDS)
+  const hashedPassword = bcrypt.hashSync(password, +process.env.SALT_ROUNDS);
   const userInstance = new userModel({
     username,
     email,
     password: hashedPassword,
     gender,
-    role
-  })
-  await userInstance.save()
-  res.status(201).json({ message: 'Done', userInstance })
-  
-}
-
-)
+    role,
+  });
+  await userInstance.save();
+  res.status(201).json({ message: "Done", userInstance });
+});
 //========================== Sign In ========================
 export const SignIn = asyncHandler(async (req, res, next) => {
-  const { email, password  } = req.body
-  
-  const isUserExists = await userModel.findOne({ email })
+  const { email, password } = req.body;
+
+  const isUserExists = await userModel.findOne({ email });
   if (!isUserExists) {
     // return res.status(400).json({ message: 'Invalid login credentials' })
-    return next(new Error("Invalid login credentials email",{cause:400}))
+    return next(new Error("Invalid login credentials email", { cause: 400 }));
   }
-  const passMatch = bcrypt.compareSync(password, isUserExists.password) // return boolean
+  const passMatch = bcrypt.compareSync(password, isUserExists.password); // return boolean
   if (!passMatch) {
-    return res.status(400).json({ message: 'Invalid login credentials' })
+    return res.status(400).json({ message: "Invalid login credentials" });
   }
 
-  const userToken = jwt.sign({email, _id:isUserExists._id,username:isUserExists.username,score:isUserExists.score,role:isUserExists.role},'testToken')
-  isUserExists.token=userToken
-  await isUserExists.save()
-  res.status(200).json({ message: 'loggedIn success', userToken})
- 
-})
+  const userToken = jwt.sign(
+    {
+      email,
+      _id: isUserExists._id,
+      username: isUserExists.username,
+      score: isUserExists.score,
+      role: isUserExists.role,
+    },
+    "testToken"
+  );
+  isUserExists.token = userToken;
+  await isUserExists.save();
+  res.status(200).json({ message: "loggedIn success", userToken });
+});
 
 //========================== Update profile =================
 
@@ -59,11 +63,13 @@ export const updateProfile = asyncHandler(async (req, res, next) => {
   const userExist = await userModel.findOne({ email });
 
   if (!userExist) {
-    return res.status(400).json({ message: 'Email does not exist' });
+    return res.status(400).json({ message: "Email does not exist" });
   }
 
   if (userExist._id.toString() !== _id.toString()) {
-    return res.status(401).json({ message: 'Unauthorized to take this action' });
+    return res
+      .status(401)
+      .json({ message: "Unauthorized to take this action" });
   }
 
   const updateResult = await userModel.updateOne({ email }, { username });
@@ -77,83 +83,88 @@ export const updateProfile = asyncHandler(async (req, res, next) => {
       {
         _id: updatedUser._id,
         email: updatedUser.email,
-        username: updatedUser.username
+        username: updatedUser.username,
       },
       "testToken", // use your secret from environment variables in production
       { expiresIn: "7d" }
     );
 
     return res.status(200).json({
-      message: 'Update done',
+      message: "Update done",
       token,
       user: updatedUser,
     });
   }
 
-  res.status(400).json({ message: 'Update failed' });
+  res.status(400).json({ message: "Update failed" });
 });
 
 //========================== get user =======================
 
 export const getUserProfile = asyncHandler(async (req, res) => {
- 
-  const { _id } = req.authuser
-  const user = await userModel.findById(_id)
-  
+  const { _id } = req.authuser;
+  const user = await userModel.findById(_id);
+
   if (user) {
-    return res.status(200).json({ message: 'Done', user })
+    return res.status(200).json({ message: "Done", user });
   }
-  return res.status(404).json({ message: 'invalid id' })
- 
-})
+  return res.status(404).json({ message: "invalid id" });
+});
 /////////////////////////////////////////////////////////////////////////
 
-export const uploudProfilePic = asyncHandler(async(req,res,next)=>{
-  const {_id}=req.authuser
-  if(!req.file){ 
-    return next(new Error("no file uploaded",{cause:400}))
+export const uploudProfilePic = asyncHandler(async (req, res, next) => {
+  const { _id } = req.authuser;
+  if (!req.file) {
+    return next(new Error("no file uploaded", { cause: 400 }));
   }
-  const {secure_url,public_id}  =await cloudinary.uploader.upload(req.file.path,{
-    folder:`user/profilePic/${_id}`,
-    // public_id:`${_id}`
-    use_filename:true,
-    unique_filename:false, 
-    resource_type:'auto'
-  })
+  const { secure_url, public_id } = await cloudinary.uploader.upload(
+    req.file.path,
+    {
+      folder: `user/profilePic/${_id}`,
+      // public_id:`${_id}`
+      use_filename: true,
+      unique_filename: false,
+      resource_type: "auto",
+    }
+  );
   // if(!data){
   //   return next(new Error("no data",{cause:400}))
-  // } 
-  const user = await userModel.findByIdAndUpdate(_id,{profile_pic:{secure_url,public_id}},{new:true})
-  if(!user){
-    await cloudinary.uploader.destroy(public_id)//only one
+  // }
+  const user = await userModel.findByIdAndUpdate(
+    _id,
+    { profile_pic: { secure_url, public_id } },
+    { new: true }
+  );
+  if (!user) {
+    await cloudinary.uploader.destroy(public_id); //only one
     // await cloudinary.api.delete_all_resources([publicids])// delete bulk of publicids
   }
-  res.status(200).json({message:'done',user})
-})
+  res.status(200).json({ message: "done", user });
+});
 export const coverPictures = async (req, res, next) => {
-  const { _id } = req.authUser
+  const { _id } = req.authuser;
   if (!req.files) {
-    return next(new Error('please upload pictures', { cause: 400 }))
+    return next(new Error("please upload pictures", { cause: 400 }));
   }
 
-  const coverImages = []
+  const coverImages = [];
   for (const file in req.files) {
     for (const key of req.files[file]) {
       const { secure_url, public_id } = await cloudinary.uploader.upload(
         key.path,
         {
           folder: `Users/Covers/${_id}`,
-          resource_type: 'image',
-        },
-      )
-      coverImages.push({ secure_url, public_id })
+          resource_type: "image",
+        }
+      );
+      coverImages.push({ secure_url, public_id });
     }
   }
-  const user = await userModel.findById(_id)
+  const user = await userModel.findById(_id);
 
   user.coverPictures.length
     ? coverImages.push(...user.coverPictures)
-    : coverImages
+    : coverImages;
 
   const userNew = await userModel.findByIdAndUpdate(
     _id,
@@ -162,45 +173,53 @@ export const coverPictures = async (req, res, next) => {
     },
     {
       new: true,
-    },
-  )
-  res.status(200).json({ message: 'Done', userNew })
-}
-
+    }
+  );
+  res.status(200).json({ message: "Done", userNew });
+};
 
 ////try admin
-export const tryadmin = asyncHandler(async(req,res,next)=>{
-  const { _id } = req.authUser
-  const user = await userModel.findById(_id)
-  if(user.role =="Admin"){
-    return res.status(200).json({ message: 'Admin', user })
+export const tryadmin = asyncHandler(async (req, res, next) => {
+  const { _id } = req.authuser;
+  const user = await userModel.findById(_id);
+  if (user.role == "Admin") {
+    return res.status(200).json({ message: "Admin", user });
   }
-  return  res.status(200).json({ message: 'User', user })
-})
+  return res.status(200).json({ message: "User", user });
+});
 
 ////////*************get all users */
-export const getallusers = asyncHandler(async(req,res,next)=>{
-   const { _id } = req.authuser
-  const user = await userModel.findById(_id)
-  const allUsers = await userModel.find({})
-  if(user.role =="Admin"){
-    return res.status(200).json({ message: 'all users retured only by admin', allUsers })
+export const getallusers = asyncHandler(async (req, res, next) => {
+  const { _id } = req.authuser;
+  const user = await userModel.findById(_id);
+  if (!user) {
+    return next(new Error("User not found", { cause: 404 }));
   }
-})
+
+  if (user.role === "Admin") {
+    const allUsers = await userModel.find({});
+    return res
+      .status(200)
+      .json({ message: "all users returned only by admin", allUsers });
+  }
+
+  return next(
+    new Error("Unauthorized - Admin access required", { cause: 403 })
+  );
+});
 /*****************delete user */
-export const deleteUserByAdmin = asyncHandler(async(req,res,next)=>{
-   const { _id } = req.authUser
-   const {userId}=req.body
+export const deleteUserByAdmin = asyncHandler(async (req, res, next) => {
+  const { _id } = req.authuser;
+  const { userId } = req.body;
 
- const user = await userModel.findById(_id)
- const userdelete = await userModel.findById(userId)
- if(!userdelete){
-    return res.json({ message: 'cannot found user' })
-
- }
-  if(user.role =="Admin"){
-    await userModel.findByIdAndDelete(userId)
-
-    return res.status(200).json({ message: 'deleted done' })
+  const user = await userModel.findById(_id);
+  const userdelete = await userModel.findById(userId);
+  if (!userdelete) {
+    return res.json({ message: "cannot found user" });
   }
-})
+  if (user.role == "Admin") {
+    await userModel.findByIdAndDelete(userId);
+
+    return res.status(200).json({ message: "deleted done" });
+  }
+});

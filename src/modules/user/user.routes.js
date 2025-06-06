@@ -24,7 +24,7 @@ router.post(
     ur.coverPictures   
   )
 router.post('/Admin',isAuth(),ur.tryadmin)
-router.post('/allUsers',isAuth(),ur.getallusers)
-router.delete('/deleted', isAuth(), ur.deleteUserByAdmin);
+router.get('/allUsers',isAuth(),ur.getallusers)
+router.delete('/deleteUser', isAuth(), ur.deleteUserByAdmin);
 
 export default router

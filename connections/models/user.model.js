@@ -27,7 +27,7 @@ const userSchema = new Schema(
     },
 
     profile_pic: {secure_url:String,public_id:String},
-    cover_pic:[{secure_url:String,public_id:String}],
+
     score: {
       type: Number,
       default: undefined,
@@ -37,9 +37,7 @@ const userSchema = new Schema(
       enum: ['Sunday 3 pm', 'Tuesday 3 pm', 'Friday 3 pm'],
       default: null
     },
-    token:{
-      type: String,
-    },
+  
     role:{
       type: String,
       default:'User',
