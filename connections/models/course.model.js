@@ -1,34 +1,52 @@
 // course.model.js
-import mongoose, { Schema } from 'mongoose';
+import mongoose from 'mongoose';
 
 const courseSchema = new mongoose.Schema({
   title: {
     type: String,
-    required: true
+    required: true,
+    trim: true
   },
   description: {
     type: String,
     required: true
   },
   price: {
-    type: Number
+    type: Number,
+    required: true
   },
   imageurl: {
     secure_url: String,
     public_id: String
   },
-  schedules: [
-    {
-      type: Schema.Types.ObjectId,
-      ref: 'Schedule' // لازم يكون نفس الاسم المستخدم في model
+  schedules: [{
+    day: {
+      type: String,
+      required: true,
+      enum: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+    },
+    time: {
+      type: String,
+      required: true
     }
-  ],
+  }],
   lessons: [
     {
-      type: Schema.Types.ObjectId,
+      type: mongoose.Schema.Types.ObjectId,
       ref: 'Leason'
     }
   ]
+}, {
+  timestamps: true,
+  toJSON: { virtuals: true },
+  toObject: { virtuals: true }
 });
 
-export const courseModel = mongoose.model('Courses', courseSchema); // ✅ تأكد الاسم هو "Course"
+// Virtual populate for schedules
+courseSchema.virtual('scheduleRefs', {
+  ref: 'Schedule',
+  localField: '_id',
+  foreignField: 'courseId'
+});
+
+export const courseModel = mongoose.model('Course', courseSchema); // ✅ تأكد الاسم هو "Course"

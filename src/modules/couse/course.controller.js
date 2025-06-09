@@ -1,24 +1,47 @@
 import { courseModel } from "../../../connections/models/course.model.js";
+import { scheduleModel } from "../../../connections/models/schedule.model.js";
 import { asyncHandler } from "../../utils/errorHandeling.js";
 import cloudinary from '../../utils/cloudinaryConfigration.js'
 
 // =============== add courses =================//
 
-export const addCourse = asyncHandler (async(req,res,next)=>{
-    const { title, description ,price} = req.body;
+export const addCourse = asyncHandler(async (req, res, next) => {
+  const { title, description, price, schedules } = req.body;
 
-    if (!title || !description || !price) {
-      res.status(400).json({message:"title and describtion and price is required "})
-    }
-  
-    const course = await courseModel.create({
-      title,
-      description,
-      price
+  if (!title || !description || !price || !schedules || !Array.isArray(schedules) || schedules.length === 0) {
+    return res.status(400).json({
+      message: "title, description, price and at least one schedule are required"
     });
-  
-    res.status(201).json({message:"added done", course,courseId: course._id});
+  }
+
+  // Create the course with embedded schedules
+  const course = await courseModel.create({
+    title,
+    description,
+    price,
+    schedules // This will now be stored directly in the course document
   });
+
+  // Also create separate schedule documents for reference
+  await Promise.all(
+    schedules.map(schedule => 
+      scheduleModel.create({
+        day: schedule.day,
+        time: schedule.time,
+        courseId: course._id
+      })
+    )
+  );
+
+  // Fetch the course with populated schedule references
+  const populatedCourse = await courseModel.findById(course._id).populate('scheduleRefs');
+
+  res.status(201).json({
+    message: "Course added successfully",
+    course: populatedCourse,
+    courseId: course._id
+  });
+});
 
 export const uploadCoursePic = asyncHandler(async (req, res, next) => {
   const { _id } = req.authuser;
@@ -50,26 +73,23 @@ export const uploadCoursePic = asyncHandler(async (req, res, next) => {
 // =============== show courses =================//
 
 export const getCourses = asyncHandler(async (req, res) => {
-    const courses = await courseModel.find({});
-    res.json(courses);
+  const courses = await courseModel.find({}).populate('scheduleRefs');
+  res.json(courses);
 });
 
-export const deleteCourse = asyncHandler(async(req,res,next)=>{
-  
-    const { courseId } = req.params;
-  
-    const lesson = await courseModel.findById(courseId);
-    if (!lesson) {
-      return res.status(404).json({ message: 'Lesson not found' });
-    }
-  
-    // Remove lesson from course's lessons array
-    await courseModel.findByIdAndUpdate(
-      lesson.courseId,
-      { $pull: { courses: courseId } }
-    );
-  
-    await leasonModel.findByIdAndDelete(courseId);
-  
-    res.status(200).json({ message: 'courses deleted successfully' });
-  });
+export const deleteCourse = asyncHandler(async (req, res, next) => {
+  const { courseId } = req.params;
+
+  const course = await courseModel.findById(courseId);
+  if (!course) {
+    return res.status(404).json({ message: 'Course not found' });
+  }
+
+  // Delete all schedules associated with the course
+  await scheduleModel.deleteMany({ courseId });
+
+  // Delete the course
+  await courseModel.findByIdAndDelete(courseId);
+
+  res.status(200).json({ message: 'Course and associated schedules deleted successfully' });
+});

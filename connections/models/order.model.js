@@ -1,33 +1,40 @@
-import { Schema, model } from "mongoose";
-const orderSchema = new Schema(
+import mongoose from "mongoose";
+
+const orderSchema = new mongoose.Schema(
   {
     userId: {
-      type: Schema.Types.ObjectId,
+      type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
     },
     courses: [
       {
-        productId: {
-          type: Schema.Types.ObjectId,
-          ref: "courses",
+        courseId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Course",
           required: true,
         },
         title: {
           type: String,
-          //   required: true,
+          required: true,
         },
         price: {
           type: Number,
           required: true,
         },
-        quantity: {
-          type: Number,
-          required: true,
-          default: 1,
-      },
-      }    ],
-    schedule: Schema.Types.ObjectId,
+        selectedSchedule: {
+          day: {
+            type: String,
+            required: true,
+            enum: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+          },
+          time: {
+            type: String,
+            required: true
+          }
+        }
+      }
+    ],
     total: {
       type: Number,
       default: 0,
@@ -42,4 +49,4 @@ const orderSchema = new Schema(
   { timestamps: true }
 );
 
-export const orderModel = model("Order", orderSchema);
+export const orderModel = mongoose.model("Order", orderSchema);

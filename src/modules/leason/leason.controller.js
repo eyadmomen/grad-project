@@ -5,12 +5,9 @@ import { courseModel } from '../../../connections/models/course.model.js';
 
 // Add a new lesson to a course
 export const addleason = asyncHandler(async (req, res, next) => {
-  const { title, description, courseId } = req.body;
-   
-
-  console.log(title,description,courseId);
+  const { LessonTitle, LessonDescription, courseId } = req.body;
   
-  if (!title || !description || !courseId) {
+  if (!LessonTitle || !LessonDescription || !courseId) {
     return res.status(400).json({ message: "title, description, and courseId are required" });
   }
 
@@ -20,12 +17,11 @@ export const addleason = asyncHandler(async (req, res, next) => {
   }
 
   const leason = await leasonModel.create({
-    title,
-    description,
+    title: LessonTitle,
+    description: LessonDescription,
     courseId
   });
 
-  // Add the lesson to the course's lessons array
   courseCheck.lessons.push(leason._id);
   await courseCheck.save();
 
@@ -42,14 +38,14 @@ export const getLessonsByCourse = asyncHandler(async (req, res, next) => {
   }
 
   const courselessons = await leasonModel.find({ courseId })
-    .select('title description video assignments');
+    .select('title description video assignment submissions');
 
   res.status(200).json({ 
     message: 'Lessons retrieved successfully',
     courseName: course.title,
-    courseId:course._id,
-    courseImage:course.imageurl,
-    courseDescription:course.description,
+    courseId: course._id,
+    courseImage: course.imageurl,
+    courseDescription: course.description,
     courselessons 
   });
 });
@@ -59,7 +55,8 @@ export const getLesson = asyncHandler(async (req, res, next) => {
   const { lessonId } = req.params;
 
   const lesson = await leasonModel.findById(lessonId)
-    .populate('courseId', 'title');
+    .populate('courseId', 'title')
+    .populate('submissions.userId', 'name email');
 
   if (!lesson) {
     return res.status(404).json({ message: 'Lesson not found' });
@@ -101,6 +98,20 @@ export const deleteLesson = asyncHandler(async (req, res, next) => {
     return res.status(404).json({ message: 'Lesson not found' });
   }
 
+  // Delete video and assignment files from cloudinary
+  if (lesson.video?.public_id) {
+    await cloudinary.uploader.destroy(lesson.video.public_id);
+  }
+  if (lesson.assignment?.public_id) {
+    await cloudinary.uploader.destroy(lesson.assignment.public_id);
+  }
+  // Delete submission files
+  for (const submission of lesson.submissions) {
+    if (submission.file?.public_id) {
+      await cloudinary.uploader.destroy(submission.file.public_id);
+    }
+  }
+
   // Remove lesson from course's lessons array
   await courseModel.findByIdAndUpdate(
     lesson.courseId,
@@ -112,85 +123,45 @@ export const deleteLesson = asyncHandler(async (req, res, next) => {
   res.status(200).json({ message: 'Lesson deleted successfully' });
 });
 
-export const addvideotoleason = asyncHandler(async(req,res,next)=>{
-    const {_id}= req.params
-    if(!req.file){ 
-        return next(new Error("no video file uploaded",{cause:400}))
-        }
-           const {secure_url,public_id}  = await cloudinary.uploader.upload(req.file.path,{
-                folder:`leason/video/${_id}`,
-                // public_id:`${_id}`
-                use_filename:true,
-                unique_filename:false, 
-                resource_type: 'video'
-              })
-               const videoleason = await leasonModel.findByIdAndUpdate(_id,{video:{ secure_url,public_id}},{new:true})
-                    if(!videoleason){
-                      await cloudinary.uploader.destroy(public_id)//only one
-                      // await cloudinary.api.delete_all_resources([publicids])// delete bulk of publicids
-                    }
-                    res.status(200).json({message:'done',videoleason})
-})
-// تعديل على الكود
-export const uploadAssig = asyncHandler(async (req, res, next) => {
-  const userId = req.authuser._id;
+// Upload video to lesson
+export const addvideotoleason = asyncHandler(async (req, res, next) => {
   const { lessonId } = req.params;
-
+  
   if (!req.file) {
-    return res.status(400).json({ message: "No file uploaded" });
+    return next(new Error("No video file uploaded", { cause: 400 }));
   }
 
   try {
-    const { secure_url, public_id } = await cloudinary.uploader.upload(req.file.path, {
-      folder: `leason/pdf/${userId}`,
+    const { secure_url, public_id, duration, format } = await cloudinary.uploader.upload(req.file.path, {
+      folder: `leason/video/${lessonId}`,
       use_filename: true,
       unique_filename: false,
-      resource_type: 'auto'
+      resource_type: 'video',
+      chunk_size: 6000000 // 6MB chunks for better upload handling
     });
 
-    const updatedLesson = await leasonModel.findByIdAndUpdate(
+    const videoleason = await leasonModel.findByIdAndUpdate(
       lessonId,
       {
-        $push: {
-          assignments: {
-            userId,
-            file: { secure_url, public_id },
-            submittedAt: new Date()
-          }
+        video: {
+          secure_url,
+          public_id,
+          duration,
+          format
         }
       },
       { new: true }
     );
-            // console.log(updatedLesson.assignments.length());
 
-// console.log(updatedLesson.assignments.length);
-
-
-// if(updatedLesson.assignments.length>1){
-//   console.log("trueeee");
-// }else{
-//   res.json("please upload all assigments first")
-// }
-
-    if (!updatedLesson) {
+    if (!videoleason) {
       await cloudinary.uploader.destroy(public_id);
-      return res.status(404).json({ message: "Lesson not found" });
+      return next(new Error("Lesson not found", { cause: 404 }));
     }
 
-    // console.log(`Assignment ${index + 1}:`, assignment);
-    
-
-    res.status(200).json({ 
-      message: 'Assignment uploaded successfully',
-      lesson: updatedLesson 
+    res.status(200).json({
+      message: 'Video uploaded successfully',
+      lesson: videoleason
     });
-
-
-    
-
-
-
-
   } catch (error) {
     if (req.file) {
       await cloudinary.uploader.destroy(req.file.public_id);
@@ -199,6 +170,124 @@ export const uploadAssig = asyncHandler(async (req, res, next) => {
   }
 });
 
+// Upload assignment file
+export const uploadAssignment = asyncHandler(async (req, res, next) => {
+  const { lessonId } = req.params;
+  const { title, description, dueDate } = req.body;
+
+  if (!req.file) {
+    return res.status(400).json({ message: "No file uploaded" });
+  }
+
+  const { secure_url, public_id } = await cloudinary.uploader.upload(req.file.path, {
+    folder: `leason/assignments/${lessonId}`,
+    use_filename: true,
+    unique_filename: false,
+    resource_type: 'auto',
+    type: 'upload' 
+  });
+
+  const updatedLesson = await leasonModel.findByIdAndUpdate(
+    lessonId,
+    {
+      assignment: {
+        secure_url,
+        public_id,
+        title,
+        description,
+        dueDate: dueDate ? new Date(dueDate) : undefined
+      }
+    },
+    { new: true }
+  );
+
+  if (!updatedLesson) {
+    await cloudinary.uploader.destroy(public_id);
+    return res.status(404).json({ message: "Lesson not found" });
+  }
+
+  res.status(200).json({
+    message: 'Assignment uploaded successfully',
+    lesson: updatedLesson
+  });
+});
+
+// Submit assignment
+export const submitAssignment = asyncHandler(async (req, res, next) => {
+  const userId = req.authuser._id;
+  const { lessonId } = req.params;
+
+  if (!req.file) {
+    return res.status(400).json({ message: "No file uploaded" });
+  }
+
+  const lesson = await leasonModel.findById(lessonId);
+  if (!lesson) {
+    return res.status(404).json({ message: "Lesson not found" });
+  }
+
+  // Check if assignment is past due date
+  if (lesson.assignment?.dueDate && new Date() > lesson.assignment.dueDate) {
+    return res.status(400).json({ message: "Assignment submission is past due date" });
+  }
+
+  const { secure_url, public_id } = await cloudinary.uploader.upload(req.file.path, {
+    folder: `leason/submissions/${lessonId}/${userId}`,
+    use_filename: true,
+    unique_filename: false,
+    resource_type: 'auto'
+  });
+
+  const updatedLesson = await leasonModel.findByIdAndUpdate(
+    lessonId,
+    {
+      $push: {
+        submissions: {
+          userId,
+          file: { secure_url, public_id },
+          submittedAt: new Date()
+        }
+      }
+    },
+    { new: true }
+  );
+
+  res.status(200).json({
+    message: 'Assignment submitted successfully',
+    lesson: updatedLesson
+  });
+});
+
+// Grade assignment
+export const gradeAssignment = asyncHandler(async (req, res, next) => {
+  const { lessonId, submissionId } = req.params;
+  const { mark, feedback } = req.body;
+
+  if (!mark || mark < 0 || mark > 100) {
+    return res.status(400).json({ message: "Valid mark (0-100) is required" });
+  }
+
+  const lesson = await leasonModel.findById(lessonId);
+  if (!lesson) {
+    return res.status(404).json({ message: "Lesson not found" });
+  }
+
+  const submission = lesson.submissions.id(submissionId);
+  if (!submission) {
+    return res.status(404).json({ message: "Submission not found" });
+  }
+
+  submission.mark = mark;
+  submission.feedback = feedback;
+  submission.status = 'graded';
+
+  await lesson.save();
+
+  res.status(200).json({
+    message: 'Assignment graded successfully',
+    lesson
+  });
+});
 
 export const AddMarkByAdmin = asyncHandler(async(req,res,next)=>{
   

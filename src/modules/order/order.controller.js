@@ -16,94 +16,88 @@ import { enrolledCoursesModel } from "../../../connections/models/enrolledcourec
 
 
 
-export const createOrderFromCart = async (req, res, next) => {
-  try {
-    const { _id } = req.authuser;
-    const userId = _id;
-    const { cartId, paymentMethod } = req.body;
+export const createOrderFromCart = asyncHandler(async (req, res, next) => {
+  const { _id } = req.authuser;
+  const userId = _id;
+  const { cartId, paymentMethod } = req.body;
 
-    if (!cartId) {
-      return res.status(400).json({ message: "Cart ID is required" });
-    }
+  if (!cartId) {
+    return res.status(400).json({ message: "Cart ID is required" });
+  }
 
-    const cart = await cartModel.findById(cartId).populate('courses.courseId');
-    if (!cart || cart.courses.length === 0) {
-      return res.status(400).json({ message: "Cart is empty or not found" });
-    }
+  const cart = await cartModel.findById(cartId).populate('courses.courseId');
+  if (!cart || cart.courses.length === 0) {
+    return res.status(400).json({ message: "Cart is empty or not found" });
+  }
 
-    // Prepare courses data
-    const orderCourses = cart.courses.map(item => ({
-      productId: item.courseId._id,
-      title: item.courseId.title,
-      price: item.courseId.price,
-      quantity: 1,
-      scheduleId: item.scheduleId
-    }));
+  // Prepare courses data
+  const orderCourses = cart.courses.map(item => ({
+    courseId: item.courseId._id,
+    title: item.courseId.title,
+    price: item.courseId.price,
+    selectedSchedule: item.schedule
+  }));
 
-    // Calculate total
-    const total = orderCourses.reduce((sum, course) => sum + course.price, 0);
+  // Calculate total
+  const total = orderCourses.reduce((sum, course) => sum + course.price, 0);
 
-    // Create order
-    const newOrder = await orderModel.create({
-      userId: cart.userId,
-      courses: orderCourses,
-      total: total,
-      paymentMethod: paymentMethod || "cash"
+  // Create order
+  const newOrder = await orderModel.create({
+    userId: cart.userId,
+    courses: orderCourses,
+    total: total,
+    paymentMethod: paymentMethod || "cash"
+  });
+
+  // Handle payment if card payment
+  let orderSession;
+  if (paymentMethod === 'card') {
+    const user = await userModel.findById(_id);
+    const token = generateToken({
+      payload: { orderId: newOrder._id },
+      signature: process.env.ORDER_TOKEN,
+      expiresIn: '1h'
     });
 
-    // Handle payment if card payment
-    let orderSession;
-    if (paymentMethod === 'card') {
-      const user = await userModel.findById(_id);
-      const token = generateToken({
-        payload: { orderId: newOrder._id },
-        signature: process.env.ORDER_TOKEN,
-        expiresIn: '1h'
-      });
-
-      orderSession = await paymentFunction({
-        payment_method_types: ['card'],
-        mode: 'payment',
-        customer_email: user.email,
-        metadata: { orderId: newOrder._id.toString() },
-        success_url: `${req.protocol}://${req.headers.host}/order/successOrder?token=${token}`,
-        cancel_url: `${req.protocol}://${req.headers.host}/order/cancelOrder?token=${token}`,
-        line_items: orderCourses.map(course => ({
-          price_data: {
-            currency: 'EGP',
-            product_data: {
-              name: course.title,
-            },
-            unit_amount: course.price * 100,
+    orderSession = await paymentFunction({
+      payment_method_types: ['card'],
+      mode: 'payment',
+      customer_email: user.email,
+      metadata: { orderId: newOrder._id.toString() },
+      success_url: `${req.protocol}://${req.headers.host}/order/successOrder?token=${token}`,
+      cancel_url: `${req.protocol}://${req.headers.host}/order/cancelOrder?token=${token}`,
+      line_items: orderCourses.map(course => ({
+        price_data: {
+          currency: 'EGP',
+          product_data: {
+            name: course.title,
           },
-          quantity: course.quantity
-        }))
-      });
-    }
-
-    // Create enrolled courses record
-    await enrolledCoursesModel.create({
-      userid: userId,
-      courses: orderCourses.map(course => ({
-        courseId: course.productId,
-        selectedSchedule: course.scheduleId
+          unit_amount: course.price * 100,
+        },
+        quantity: 1
       }))
     });
-
-    // Delete cart after successful order
-    await cartModel.findByIdAndDelete(cartId);
-
-    return res.status(201).json({
-      message: "Order created successfully",
-      order: newOrder,
-      checkoutUrl: orderSession?.url
-    });
-
-  } catch (error) {
-    console.error(error);
-    return next(error);
   }
-};
+
+  // Create enrolled courses record
+  await enrolledCoursesModel.create({
+    userid: userId,
+    courses: orderCourses.map(course => ({
+      courseId: course.courseId,
+      selectedSchedule: course.selectedSchedule
+    }))
+  });
+
+  // Delete cart after successful order
+  await cartModel.findByIdAndDelete(cartId);
+
+  return res.status(201).json({
+    message: "Order created successfully",
+    order: newOrder,
+    checkoutUrl: orderSession?.url
+  });
+});
+
 export const putInDataBase = asyncHandler(async(req,res,next)=>{
   const {_id}=req.authuser
   const {cartId}=req.body
@@ -147,26 +141,15 @@ export const getEnrolledCourses = asyncHandler(async (req, res, next) => {
   const { _id } = req.authuser;
 
   // Find user's enrolled courses and populate course details
-  const enrolledCourses = await enrolledCoursesModel.find({ userid: _id }).populate({
-      path: 'courses.courseId',
-      select: 'title description price imageurl schedules',
-      model: 'Courses',
-      populate: {
-        path: 'schedules',
-        select: 'schedule',
-        model: 'Schedule'
-      }
-    })
+  const enrolledCourses = await enrolledCoursesModel.find({ userid: _id })
     .populate({
-      path: 'courses.selectedSchedule',
-      select: 'schedule',
-      model: 'Schedule'
+      path: 'courses.courseId',
+      select: 'title description price imageurl schedules'
     });
 
   if (!enrolledCourses) {
     return res.status(404).json({ message: "No enrolled courses found" });
   }
-  
 
   // Format the response
   const formattedCourses = enrolledCourses.flatMap(enrolled =>
@@ -176,18 +159,8 @@ export const getEnrolledCourses = asyncHandler(async (req, res, next) => {
       description: course.courseId.description,
       price: course.courseId.price,
       image: course.courseId.imageurl,
-      selectedSchedule: course.selectedSchedule
-        ? {
-            scheduleId: course.selectedSchedule._id,
-            scheduleTime: course.selectedSchedule.schedule
-          }
-        : null,
+      selectedSchedule: course.selectedSchedule,
       availableSchedules: course.courseId.schedules
-        ? course.courseId.schedules.map(schedule => ({
-            scheduleId: schedule._id,
-            scheduleTime: schedule.schedule
-          }))
-        : []
     }))
   );
 

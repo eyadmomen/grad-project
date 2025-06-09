@@ -11,7 +11,7 @@ export const isAuth = () => {
     }
 
     const token = authHeader.split(" ")[1]; // extract the actual token
-    console.log("Token:", token);
+
 
     try {
       const decodedData = jwt.verify(token, "testToken");

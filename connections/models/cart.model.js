@@ -1,23 +1,30 @@
-import mongoose, { Schema } from "mongoose";
+import mongoose from "mongoose";
 
 const cartSchema = new mongoose.Schema(
   {
     userId: {
-      type: Schema.Types.ObjectId,
+      type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true, 
     },
     courses: [
       {
         courseId: {
-          type: Schema.Types.ObjectId,
-          ref: "Courses",
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Course",
           required: true,
         },
-        scheduleId: {
-          type: String,
-          required: true,
-        },
+        schedule: {
+          day: {
+            type: String,
+            required: true,
+            enum: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+          },
+          time: {
+            type: String,
+            required: true
+          }
+        }
       },
     ],
     total: {

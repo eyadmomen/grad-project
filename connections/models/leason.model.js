@@ -1,4 +1,4 @@
-import mongoose, { Schema } from 'mongoose';
+import mongoose from 'mongoose';
 
 const leasonSchema = new mongoose.Schema(
   {
@@ -11,30 +11,48 @@ const leasonSchema = new mongoose.Schema(
       required: true
     },
     courseId: {
-      type: Schema.Types.ObjectId,
-      ref: 'Courses',
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Course',
       required: true
     },
     video: {
       secure_url: String,
-      public_id: String
+      public_id: String,
+      duration: Number,
+      format: String
     },
-    assignments: [
+    assignment: {
+      secure_url: String,
+      public_id: String,
+      title: String,
+      description: String,
+      dueDate: Date
+    },
+    submissions: [
       {
         userId: {
-          type: Schema.Types.ObjectId,
-          ref: 'User'
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'User',
+          required: true
         },
         file: {
           secure_url: String,
           public_id: String
         },
-        mark:{
-        type:String
+        mark: {
+          type: Number,
+          min: 0,
+          max: 100
         },
+        feedback: String,
         submittedAt: {
           type: Date,
           default: Date.now
+        },
+        status: {
+          type: String,
+          enum: ['pending', 'graded', 'returned'],
+          default: 'pending'
         }
       }
     ]

@@ -84,6 +84,9 @@ export const updateProfile = asyncHandler(async (req, res, next) => {
         _id: updatedUser._id,
         email: updatedUser.email,
         username: updatedUser.username,
+        role: updatedUser.role,
+        score: updatedUser.score,
+        gender: updatedUser.gender,
       },
       "testToken", // use your secret from environment variables in production
       { expiresIn: "7d" }
