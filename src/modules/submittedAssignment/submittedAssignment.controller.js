@@ -1,6 +1,8 @@
 import { submittedAssignmentModel } from '../../../connections/models/submittedAssignment.model.js';
 import { asyncHandler } from '../../utils/errorHandeling.js';
 import { leasonModel } from '../../../connections/models/leason.model.js';
+import fs from 'fs';
+import path from 'path';
 // Get all submissions for a lesson
 export const getAllSubmissions = asyncHandler(async (req, res, next) => {
   const { lessonId } = req.params;
@@ -260,4 +262,30 @@ export const getStudentAssignmentSubmissions = async (req, res) => {
       error: error.message
     });
   }
-}; 
+};
+
+// Download a submission (for admin to download any submission)
+
+export const downloadSubmission = asyncHandler(async (req, res, next) => {
+  const { submissionId } = req.params;
+  const { role } = req.authuser;
+
+  if (role !== 'Admin') {
+    return res.status(403).json({ message: 'Unauthorized: Admin access required' });
+  }
+
+  const submission = await submittedAssignmentModel.findById(submissionId)
+    .populate('userId', 'name email');
+
+  if (!submission || !submission.file || !submission.file.filePath) {
+    return res.status(404).json({ message: 'Submission not found or no file attached' });
+  }
+
+  const filePath = path.resolve(submission.file.filePath);
+
+  if (!fs.existsSync(filePath)) {
+    return res.status(404).json({ message: 'File not found on server' });
+  }
+
+  return res.download(filePath);
+});

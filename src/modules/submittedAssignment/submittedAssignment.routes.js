@@ -7,6 +7,7 @@ import {
   deleteSubmission,
   getMySubmission,
   downloadMySubmission,
+  downloadSubmission,
 
   reviewAllSubmissions,
   gradeSubmission,
@@ -54,5 +55,6 @@ router.get('/submissions', isAuth(), getStudentAssignmentSubmissions);
 // Admin routes
 router.get('/review', isAuth(), reviewAllSubmissions);
 router.post('/:submissionId/grade', isAuth(), gradeSubmission);
+router.get('/:submissionId/download', isAuth(), downloadSubmission);
 
 export default router; 
