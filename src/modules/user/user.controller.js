@@ -4,16 +4,15 @@ import jwt from "jsonwebtoken";
 import { asyncHandler } from "../../utils/errorHandeling.js";
 import cloudinary from "../../utils/cloudinaryConfigration.js";
 //========================= Sign Up ==================
+
 export const SignUp = asyncHandler(async (req, res, next) => {
-  // try {
   const { username, email, password, cPassword, gender, role } = req.body;
-  // email check
 
   const isUserExists = await userModel.findOne({ email });
   if (isUserExists) {
-    return res.status(400).json({ message: "Email is already exist" });
+    return res.status(400).json({ message: 'Email is already exist' });
   }
-  // hashing password
+
   const hashedPassword = bcrypt.hashSync(password, +process.env.SALT_ROUNDS);
   const userInstance = new userModel({
     username,
@@ -22,21 +21,22 @@ export const SignUp = asyncHandler(async (req, res, next) => {
     gender,
     role,
   });
+
   await userInstance.save();
-  res.status(201).json({ message: "Done", userInstance });
+  res.status(201).json({ message: 'Done', userInstance });
 });
-//========================== Sign In ========================
+
 export const SignIn = asyncHandler(async (req, res, next) => {
   const { email, password } = req.body;
 
   const isUserExists = await userModel.findOne({ email });
   if (!isUserExists) {
-    // return res.status(400).json({ message: 'Invalid login credentials' })
-    return next(new Error("Invalid login credentials email", { cause: 400 }));
+    return next(new Error('Invalid login credentials (email)', { cause: 400 }));
   }
-  const passMatch = bcrypt.compareSync(password, isUserExists.password); // return boolean
+
+  const passMatch = bcrypt.compareSync(password, isUserExists.password);
   if (!passMatch) {
-    return res.status(400).json({ message: "Invalid login credentials" });
+    return res.status(400).json({ message: 'Invalid login credentials (password)' });
   }
 
   const userToken = jwt.sign(
@@ -47,13 +47,14 @@ export const SignIn = asyncHandler(async (req, res, next) => {
       score: isUserExists.score,
       role: isUserExists.role,
     },
-    "testToken"
+    process.env.JWT_SECRET || 'testToken'
   );
+
   isUserExists.token = userToken;
   await isUserExists.save();
-  res.status(200).json({ message: "loggedIn success", userToken });
-});
 
+  res.status(200).json({ message: 'loggedIn success', userToken });
+});
 //========================== Update profile =================
 
 export const updateProfile = asyncHandler(async (req, res, next) => {

@@ -1,7 +1,6 @@
-
-import joi from 'joi'
-import { generalFields } from '../../middelwares/validation.js'
-
+// modules/user/user.validation.js
+import joi from 'joi';
+import { generalFields } from '../../middelwares/validation.js';
 
 export const SignUpSchema = {
   body: joi
@@ -9,24 +8,36 @@ export const SignUpSchema = {
       username: joi
         .string()
         .min(3)
-        .max(10)
+        .max(30)
+        .required()
         .messages({
-          'any.required': 'userName is required',
-        })
-        .required(),
+          'string.base': 'Username must be a string',
+          'string.empty': 'Username is required',
+          'string.min': 'Username must be at least 3 characters',
+          'string.max': 'Username must be at most 30 characters',
+          'any.required': 'Username is required',
+        }),
+
       email: generalFields.email,
+
       password: generalFields.password,
-      cPassword: joi.valid(joi.ref('password')).required(),
-      gender: joi.string().optional(),
-      role:joi.string()
+
+      cPassword: joi
+        .valid(joi.ref('password'))
+        .required()
+        .messages({
+          'any.only': 'Confirm password must match password',
+          'any.required': 'Confirm password is required',
+        }),
+
+      gender: joi.string().valid('male', 'female').optional().messages({
+        'any.only': 'Gender must be either "male" or "female"',
+      }),
+
+      role: joi.string().optional(),
     })
     .required(),
-  //   query: joi
-  //     .object({
-  //       test: joi.string().min(3).max(5).required(),
-  //     })
-  //     .required(),
-}
+};
 
 export const SignInSchema = {
   body: joi
@@ -34,6 +45,8 @@ export const SignInSchema = {
       email: generalFields.email,
       password: generalFields.password,
     })
-    .options({ presence: 'required' })
-    .required(),
-}
+    .required()
+    .messages({
+      'any.required': 'All fields are required',
+    }),
+};

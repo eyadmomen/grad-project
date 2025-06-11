@@ -1,7 +1,11 @@
 import mongoose from "mongoose"
 import cors from "cors"
 
+
 import { bookRooter, feedbackRouter, userRouter, plasementTest,course,schedule,cart,order, leason,finalExam} from "./allroutes.js"
+import submittedAssignmentRoutes from "./modules/submittedAssignment/submittedAssignment.routes.js"
+import finalTestRoutes from "./modules/finalTest/finalTest.routes.js"
+
 export const initapp = (app, express)=>{
     const port =  process.env.PORT
 app.use(express.json())
@@ -16,6 +20,9 @@ app.use('/cart',cart)
 app.use('/order',order)
 app.use('/leason',leason)
 app.use('/finalExam',finalExam)
+app.use('/submittedAssignment', submittedAssignmentRoutes)
+app.use('/finalTest', finalTestRoutes)
+
 
 
 app.use('/test', (req, res, next) =>

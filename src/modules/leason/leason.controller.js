@@ -1,12 +1,15 @@
+// lesson.controller.js
 import { leasonModel } from "../../../connections/models/leason.model.js";
 import { asyncHandler } from "../../utils/errorHandeling.js";
 import { v2 as cloudinary } from 'cloudinary';
 import { courseModel } from '../../../connections/models/course.model.js';
+import mongoose from 'mongoose';
+import axios from 'axios';
 
 // Add a new lesson to a course
 export const addleason = asyncHandler(async (req, res, next) => {
   const { LessonTitle, LessonDescription, courseId } = req.body;
-  
+
   if (!LessonTitle || !LessonDescription || !courseId) {
     return res.status(400).json({ message: "title, description, and courseId are required" });
   }
@@ -31,6 +34,7 @@ export const addleason = asyncHandler(async (req, res, next) => {
 // Get all lessons for a specific course
 export const getLessonsByCourse = asyncHandler(async (req, res, next) => {
   const { courseId } = req.params;
+  const userId = req.authuser._id; // Get the authenticated user's ID
 
   const course = await courseModel.findById(courseId);
   if (!course) {
@@ -38,7 +42,11 @@ export const getLessonsByCourse = asyncHandler(async (req, res, next) => {
   }
 
   const courselessons = await leasonModel.find({ courseId })
-    .select('title description video assignment submissions');
+    .select('title description video assignment submissions')
+    .populate({
+      path: 'submissions',
+      match: { userId: userId } // Only populate submissions for the current user
+    });
 
   res.status(200).json({ 
     message: 'Lessons retrieved successfully',
@@ -98,21 +106,18 @@ export const deleteLesson = asyncHandler(async (req, res, next) => {
     return res.status(404).json({ message: 'Lesson not found' });
   }
 
-  // Delete video and assignment files from cloudinary
   if (lesson.video?.public_id) {
     await cloudinary.uploader.destroy(lesson.video.public_id);
   }
   if (lesson.assignment?.public_id) {
     await cloudinary.uploader.destroy(lesson.assignment.public_id);
   }
-  // Delete submission files
   for (const submission of lesson.submissions) {
     if (submission.file?.public_id) {
       await cloudinary.uploader.destroy(submission.file.public_id);
     }
   }
 
-  // Remove lesson from course's lessons array
   await courseModel.findByIdAndUpdate(
     lesson.courseId,
     { $pull: { lessons: lessonId } }
@@ -126,7 +131,7 @@ export const deleteLesson = asyncHandler(async (req, res, next) => {
 // Upload video to lesson
 export const addvideotoleason = asyncHandler(async (req, res, next) => {
   const { lessonId } = req.params;
-  
+
   if (!req.file) {
     return next(new Error("No video file uploaded", { cause: 400 }));
   }
@@ -137,7 +142,7 @@ export const addvideotoleason = asyncHandler(async (req, res, next) => {
       use_filename: true,
       unique_filename: false,
       resource_type: 'video',
-      chunk_size: 6000000 // 6MB chunks for better upload handling
+      chunk_size: 6000000
     });
 
     const videoleason = await leasonModel.findByIdAndUpdate(
@@ -163,9 +168,6 @@ export const addvideotoleason = asyncHandler(async (req, res, next) => {
       lesson: videoleason
     });
   } catch (error) {
-    if (req.file) {
-      await cloudinary.uploader.destroy(req.file.public_id);
-    }
     return next(error);
   }
 });
@@ -179,20 +181,14 @@ export const uploadAssignment = asyncHandler(async (req, res, next) => {
     return res.status(400).json({ message: "No file uploaded" });
   }
 
-  const { secure_url, public_id } = await cloudinary.uploader.upload(req.file.path, {
-    folder: `leason/assignments/${lessonId}`,
-    use_filename: true,
-    unique_filename: false,
-    resource_type: 'auto',
-    type: 'upload' 
-  });
+  // Save file locally instead of Cloudinary
+  const filePath = req.file.path; // multer saves the file locally
 
   const updatedLesson = await leasonModel.findByIdAndUpdate(
     lessonId,
     {
       assignment: {
-        secure_url,
-        public_id,
+        filePath, // Store the local file path
         title,
         description,
         dueDate: dueDate ? new Date(dueDate) : undefined
@@ -202,7 +198,6 @@ export const uploadAssignment = asyncHandler(async (req, res, next) => {
   );
 
   if (!updatedLesson) {
-    await cloudinary.uploader.destroy(public_id);
     return res.status(404).json({ message: "Lesson not found" });
   }
 
@@ -226,7 +221,6 @@ export const submitAssignment = asyncHandler(async (req, res, next) => {
     return res.status(404).json({ message: "Lesson not found" });
   }
 
-  // Check if assignment is past due date
   if (lesson.assignment?.dueDate && new Date() > lesson.assignment.dueDate) {
     return res.status(400).json({ message: "Assignment submission is past due date" });
   }
@@ -289,7 +283,18 @@ export const gradeAssignment = asyncHandler(async (req, res, next) => {
   });
 });
 
-export const AddMarkByAdmin = asyncHandler(async(req,res,next)=>{
+// Download assignment PDF
+export const downloadAssignment = asyncHandler(async (req, res, next) => {
+  const { lessonId } = req.params;
+  const lesson = await leasonModel.findById(lessonId);
   
-})
+  console.log('Lesson:', lesson);
+  console.log('Assignment:', lesson?.assignment);
+  console.log('FilePath:', lesson?.assignment?.filePath);
 
+  if (!lesson || !lesson.assignment || !lesson.assignment.filePath) {
+    return res.status(404).json({ message: 'Assignment PDF not found' });
+  }
+
+  res.download(lesson.assignment.filePath);
+});

@@ -24,38 +24,12 @@ const leasonSchema = new mongoose.Schema(
     assignment: {
       secure_url: String,
       public_id: String,
+      filePath: String,
       title: String,
       description: String,
       dueDate: Date
     },
-    submissions: [
-      {
-        userId: {
-          type: mongoose.Schema.Types.ObjectId,
-          ref: 'User',
-          required: true
-        },
-        file: {
-          secure_url: String,
-          public_id: String
-        },
-        mark: {
-          type: Number,
-          min: 0,
-          max: 100
-        },
-        feedback: String,
-        submittedAt: {
-          type: Date,
-          default: Date.now
-        },
-        status: {
-          type: String,
-          enum: ['pending', 'graded', 'returned'],
-          default: 'pending'
-        }
-      }
-    ]
+    submissions: [{ type: mongoose.Schema.Types.ObjectId, ref: 'SubmittedAssignment' }]
   },
   {
     timestamps: true

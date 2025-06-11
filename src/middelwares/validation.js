@@ -1,59 +1,74 @@
-// Can't create, edit, or upload … Not enough storage. Get 100 GB of storage for EGP 59.99 EGP 14.90/month for 2 months.
-// req => userdata
-// schema => endPoint schema
-
-import joi from 'joi'
-const reqMethods = ['body', 'query', 'params', 'headers', 'file', 'files']
+// middlewares/validation.js
+import joi from 'joi';
 
 export const generalFields = {
   email: joi
     .string()
-    .email({ tlds: { allow: ['com', 'net', 'org'] } })
-    .required(),
+    .email({ tlds: { allow: false } }) // allow any domain
+    .required()
+    .messages({
+      'string.base': 'Email must be a string',
+      'string.empty': 'Email is required',
+      'string.email': 'Please enter a valid email address',
+      'any.required': 'Email is required',
+    }),
+
   password: joi
     .string()
-    .regex(/^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[a-zA-Z]).{8,}$/)
+    .min(6)
+    .max(30)
+    .pattern(new RegExp('^[a-zA-Z0-9@#$%^&*!]+$'))
+    .required()
     .messages({
-      'string.pattern.base': 'Password regex fail',
-    })
-    .required(),
-}
+      'string.base': 'Password must be a string',
+      'string.empty': 'Password is required',
+      'string.min': 'Password must be at least 6 characters',
+      'string.max': 'Password must be at most 30 characters',
+      'string.pattern.base':
+        'Password must contain only letters, numbers, or special characters (@#$%^&*! etc.)',
+      'any.required': 'Password is required',
+    }),
 
+  id: joi
+    .string()
+    .length(24)
+    .hex()
+    .required()
+    .messages({
+      'string.base': 'ID must be a string',
+      'string.length': 'ID must be 24 characters',
+      'string.hex': 'ID must be a valid hexadecimal',
+      'any.required': 'ID is required',
+    }),
+};
+
+// validationCoreFunction to apply Joi schemas
 export const validationCoreFunction = (schema) => {
   return (req, res, next) => {
-    // req
-    const validationErrorArr = []
-    for (const key of reqMethods) {
-      if (schema[key]) {
-        const validationResult = schema[key].validate(req[key], {
-          abortEarly: false,//علشان ميلاقيش اول ايرور و يخرج بعملها فولس علشان يديني كل الايرورز
-        }) // error
-        if (validationResult.error) {
-          validationErrorArr.push(validationResult.error.details)
-        }
-      }
+    const validationResults = [];
+
+    if (schema.body) {
+      const { error } = schema.body.validate(req.body, { abortEarly: false });
+      if (error) validationResults.push(...error.details);
     }
 
-    if (validationErrorArr.length) {
-      return res
-        .status(400)
-        .json({ message: 'Validation Error', Errors: validationErrorArr })
+    if (schema.query) {
+      const { error } = schema.query.validate(req.query, { abortEarly: false });
+      if (error) validationResults.push(...error.details);
     }
 
-    next()
-  }
-}
+    if (schema.params) {
+      const { error } = schema.params.validate(req.params, { abortEarly: false });
+      if (error) validationResults.push(...error.details);
+    }
 
-// schema :{
-//     query:{
-//         username:val,
-//         email:val,
-//         pas:val
-//     }
-// }
+    if (validationResults.length > 0) {
+      return res.status(400).json({
+        message: 'Validation Error',
+        errors: validationResults.map((err) => err.message),
+      });
+    }
 
-// req:{
-//     body:{
-//         age:value
-//     }
-// }
+    next();
+  };
+};
