@@ -9,7 +9,8 @@ import {
   downloadMySubmission,
 
   reviewAllSubmissions,
-  gradeSubmission
+  gradeSubmission,
+  getStudentAssignmentSubmissions
 } from './submittedAssignment.controller.js';
 import { isAuth } from '../../middelwares/auth.js';
 import multer from 'multer';
@@ -47,6 +48,8 @@ router.delete('/:lessonId/submissions/:submissionId', isAuth(), deleteSubmission
 // Student routes
 router.get('/my-submissions/:submissionId', isAuth(), getMySubmission);
 router.get('/my-submissions/:submissionId/download', isAuth(), downloadMySubmission);
+router.post('/lesson/:lessonId/submit', isAuth(), upload.single('assignmentFile'), createSubmission);
+router.get('/submissions', isAuth(), getStudentAssignmentSubmissions);
 
 // Admin routes
 router.get('/review', isAuth(), reviewAllSubmissions);

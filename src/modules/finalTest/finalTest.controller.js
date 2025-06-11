@@ -4,6 +4,8 @@ import { submittedAssignmentModel } from '../../../connections/models/submittedA
 import { leasonModel } from '../../../connections/models/leason.model.js';
 import { courseModel } from '../../../connections/models/course.model.js';
 import { asyncHandler } from '../../utils/errorHandeling.js';
+import path from 'path';
+import fs from 'fs';
 
 // Create a final test for a course (admin only)
 export const createFinalTest = asyncHandler(async (req, res, next) => {
@@ -257,4 +259,65 @@ export const downloadStudentSubmission = asyncHandler(async (req, res, next) => 
   // Set the filename for download
   const filename = `final-test-submission-${submission.userId.username}-${submission.finalTestId.courseId.title}.pdf`;
   res.download(submission.file.filePath, filename);
-}); 
+});
+
+export const getStudentFinalTestFeedback = async (req, res) => {
+  try {
+    const userId = req.authuser;
+
+    // Find all final test submissions for this student with proper population
+    const submissions = await submittedFinalTestModel.find({
+      userId
+    }).populate('userId', 'name email')
+      .populate({
+        path: 'finalTestId',
+        select: 'courseId',
+        populate: {
+          path: 'courseId',
+          select: 'title '
+        }
+      });
+
+    if (!submissions || submissions.length === 0) {
+      return res.status(404).json({
+        message: 'No final test submissions found'
+      });
+    }
+
+    // Return all submissions with their feedback and ratings
+    return res.status(200).json({
+      message: 'Final test feedbacks retrieved successfully',
+      submissions: submissions.map(submission => {
+        // Log the submission for debugging
+        console.log('Raw submission:', submission);
+        
+        const submissionData = {
+          id: submission._id,
+          studentName: submission.userId?.name || 'Unknown',
+          studentEmail: submission.userId?.email || 'Unknown',
+          courseName: submission.finalTestId?.courseId?.title || 'Unknown Course',
+          courseId: submission.finalTestId?.courseId?._id || null,
+          submittedAt: submission.submittedAt,
+          status: submission.status || 'pending'
+        };
+
+        // Only include rating and feedback if the submission is graded
+        if (submission.status === 'graded') {
+          submissionData.rating = submission.rating || 'No Rating';
+          submissionData.feedback = submission.feedback || 'No feedback provided';
+        } else {
+          submissionData.rating = null;
+          submissionData.feedback = null;
+        }
+
+        return submissionData;
+      })
+    });
+  } catch (error) {
+    console.error('Error getting final test feedbacks:', error);
+    return res.status(500).json({
+      message: 'Error getting final test feedbacks',
+      error: error.message
+    });
+  }
+}; 

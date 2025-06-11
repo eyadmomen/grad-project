@@ -8,7 +8,8 @@ import {
   reviewAllFinalTestSubmissions,
   gradeFinalTestSubmission,
   getFinalTestFile,
-  downloadStudentSubmission
+  downloadStudentSubmission,
+  getStudentFinalTestFeedback
 } from './finalTest.controller.js';
 
 const router = Router();
@@ -50,5 +51,7 @@ router.get('/submission/:submissionId/download', isAuth(), downloadStudentSubmis
 // Student routes
 router.get('/course/:courseId/file', isAuth(), getFinalTestFile);
 router.post('/course/:courseId/submit', isAuth(), upload.single('finalTestFile'), createFinalTestSubmission);
+
+router.get('/feedback', isAuth(), getStudentFinalTestFeedback);
 
 export default router; 
