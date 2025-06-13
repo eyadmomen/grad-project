@@ -77,6 +77,22 @@ export const getCourses = asyncHandler(async (req, res) => {
   res.json(courses);
 });
 
+// export const deleteCourse = asyncHandler(async (req, res, next) => {
+//   const { courseId } = req.params;
+
+//   const course = await courseModel.findById(courseId);
+//   if (!course) {
+//     return res.status(404).json({ message: 'Course not found' });
+//   }
+
+//   // Delete all schedules associated with the course
+//   await scheduleModel.deleteMany({ courseId });
+
+//   // Delete the course
+//   await courseModel.findByIdAndDelete(courseId);
+
+//   res.status(200).json({ message: 'Course and associated schedules deleted successfully' });
+// });
 export const deleteCourse = asyncHandler(async (req, res, next) => {
   const { courseId } = req.params;
 
@@ -85,11 +101,36 @@ export const deleteCourse = asyncHandler(async (req, res, next) => {
     return res.status(404).json({ message: 'Course not found' });
   }
 
+  // Get all lessons associated with the course
+  const lessons = await leasonModel.find({ courseId });
+  const lessonIds = lessons.map(lesson => lesson._id);
+
+  // Delete all submitted assignments for the course's lessons
+  await submittedAssignmentModel.deleteMany({ lessonId: { $in: lessonIds } });
+
+  // Delete the final test and its submissions
+  const finalTest = await finalTestModel.findOne({ courseId });
+  if (finalTest) {
+    await submittedFinalTestModel.deleteMany({ finalTestId: finalTest._id });
+    await finalTestModel.findByIdAndDelete(finalTest._id);
+  }
+
+  // Delete all lessons
+  await leasonModel.deleteMany({ courseId });
+
   // Delete all schedules associated with the course
   await scheduleModel.deleteMany({ courseId });
+
+  // Remove course from all enrolled courses
+  await enrolledCoursesModel.updateMany(
+    { 'courses.courseId': courseId },
+    { $pull: { courses: { courseId: courseId } } }
+  );
 
   // Delete the course
   await courseModel.findByIdAndDelete(courseId);
 
-  res.status(200).json({ message: 'Course and associated schedules deleted successfully' });
+  res.status(200).json({ 
+    message: 'Course and all associated data (lessons, assignments, final tests, enrollments) deleted successfully' 
+  });
 });
