@@ -2,7 +2,11 @@ import { courseModel } from "../../../connections/models/course.model.js";
 import { scheduleModel } from "../../../connections/models/schedule.model.js";
 import { asyncHandler } from "../../utils/errorHandeling.js";
 import cloudinary from '../../utils/cloudinaryConfigration.js'
-
+import { leasonModel } from "../../../connections/models/leason.model.js";
+import { submittedAssignmentModel } from "../../../connections/models/submittedAssignment.model.js";
+import { finalTestModel } from "../../../connections/models/finalTest.model.js";
+import { submittedFinalTestModel } from "../../../connections/models/submittedFinalTest.model.js";
+import { enrolledCoursesModel } from "../../../connections/models/enrolledcoureces.model.js";
 // =============== add courses =================//
 
 export const addCourse = asyncHandler(async (req, res, next) => {
