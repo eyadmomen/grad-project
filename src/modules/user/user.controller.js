@@ -3,6 +3,13 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { asyncHandler } from "../../utils/errorHandeling.js";
 import cloudinary from "../../utils/cloudinaryConfigration.js";
+import { submittedAssignmentModel } from "../../../connections/models/submittedAssignment.model.js";
+import { submittedFinalTestModel } from "../../../connections/models/submittedFinalTest.model.js";
+import { enrolledCoursesModel } from "../../../connections/models/enrolledcoureces.model.js";
+import { AssignMarkModel } from "../../../connections/models/assig.mark.model.js";
+import { placementTestModel } from "../../../connections/models/palcemetTest.model.js";
+import { cartModel } from "../../../connections/models/cart.model.js";
+import { orderModel } from "../../../connections/models/order.model.js";
 //========================= Sign Up ==================
 
 export const SignUp = asyncHandler(async (req, res, next) => {
@@ -218,12 +225,35 @@ export const deleteUserByAdmin = asyncHandler(async (req, res, next) => {
 
   const user = await userModel.findById(_id);
   const userdelete = await userModel.findById(userId);
+  
   if (!userdelete) {
     return res.json({ message: "cannot found user" });
   }
+  
   if (user.role == "Admin") {
+    // Delete all related records
+    await Promise.all([
+      // Delete submitted assignments
+      submittedAssignmentModel.deleteMany({ userId }),
+      // Delete submitted final tests
+      submittedFinalTestModel.deleteMany({ userId }),
+      // Delete enrolled courses
+      enrolledCoursesModel.deleteMany({ userid: userId }),
+      // Delete assignment marks
+      AssignMarkModel.deleteMany({ userId }),
+      // Delete placement test results
+      placementTestModel.deleteMany({ student_Id: userId }),
+      // Delete cart
+      cartModel.deleteMany({ userId }),
+      // Delete orders
+      orderModel.deleteMany({ userId })
+    ]);
+
+    // Finally delete the user
     await userModel.findByIdAndDelete(userId);
 
-    return res.status(200).json({ message: "deleted done" });
+    return res.status(200).json({ message: "User and all related records deleted successfully" });
   }
+  
+  return next(new Error("Unauthorized - Admin access required", { cause: 403 }));
 });

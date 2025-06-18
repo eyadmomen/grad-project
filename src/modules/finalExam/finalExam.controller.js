@@ -1,16 +1,3 @@
-
-
-
-
-
-
-
-
-
-
-
-
-
 import { pythonAdvancedExamModel } from "../../../connections/models/finalexam/pythonAdvancedExam.js";
 import { pythonExamModel } from "../../../connections/models/finalexam/pythonExam.js";
 import { scratch3ExamModel } from "../../../connections/models/finalexam/scratch3Exam.js";
